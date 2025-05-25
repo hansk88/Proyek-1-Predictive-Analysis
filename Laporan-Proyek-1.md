@@ -1,4 +1,4 @@
-# Laporan Proyek Machine Learning - Hans Kristiandi
+![download (2)](https://github.com/user-attachments/assets/fb28cabf-76cb-4d35-b224-ffa898805fa5)# Laporan Proyek Machine Learning - Hans Kristiandi
 
 ## Domain Proyek
 
@@ -108,13 +108,13 @@ Sebelum data digunakan untuk melatih model, data-data tersebut dibersihkan terle
 ```ruby
 dataset.drop(['dt', 'dt_iso', 'timezone', 'city_name', 'lat', 'lon', 'weather_id', 'weather_main', 'weather_icon'], inplace=True, axis=1)
 ```
-Kolom seperti tanggal, waktu, lokasi, dsb tidak relevan dengan kolom target (label) sehingga dihapus.
+Karena kolom seperti tanggal, waktu, lokasi, dsb tidak relevan dengan kolom target (label) maka kolom-kolom tersebut dihapus.
 
 ```ruby
 dataset.drop(['sea_level', 'grnd_level', 'rain_today', 'snow_1h', 'snow_3h', 'snow_6h', 'snow_12h', 'snow_24h', 'snow_today'], inplace=True, axis=1)
 dataset.drop(['rain_1h', 'rain_3h', 'rain_6h', 'rain_12h', 'rain_24h'], inplace=True, axis=1)
 ```
-Entri dari kolom ini semuanya atau mayoritas berupa nilai null sehingga kolom tersebut juga akan dihapus.
+Karena entri dari kolom ini semuanya atau mayoritas berupa nilai null maka kolom-kolom tersebut juga akan dihapus.
 
 ```ruby
 check_diff = ((dataset["temp"] != dataset["temp_min"]) & 
@@ -150,28 +150,94 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, rando
 Bertujuan untuk memisahkan kolom variabel dalam X dan kolom target dalam y. Selanjutnya data dipisah dengan komposisi 80% untuk latihan dan 20% untuk diuji. Data yang telah dipisah telah siap untuk dimasukkan ke pelatihan model.
 
 ## Modeling
-Tahapan ini membahas mengenai model machine learning yang digunakan untuk menyelesaikan permasalahan. Anda perlu menjelaskan tahapan dan parameter yang digunakan pada proses pemodelan.
+Untuk proyek kali ini, algoritma pelatihan yang digunakan ada 3 yaitu KNN, Random Forest, dan Algorithm Boosting. Penjelasan lengkap untuk masing-masing algoritma yaitu:
 
-**Rubrik/Kriteria Tambahan (Opsional)**: 
-- Menjelaskan kelebihan dan kekurangan dari setiap algoritma yang digunakan.
-- Jika menggunakan satu algoritma pada solution statement, lakukan proses improvement terhadap model dengan hyperparameter tuning. **Jelaskan proses improvement yang dilakukan**.
-- Jika menggunakan dua atau lebih algoritma pada solution statement, maka pilih model terbaik sebagai solusi. **Jelaskan mengapa memilih model tersebut sebagai model terbaik**.
+### K Nearest Neighbour (KNN)
+
+```ruby
+knn = KNeighborsClassifier().fit(X_train, y_train)
+```
+Sesuai namanya, algoritma ini bekerja berdasarkan kedekatan antar data. KNN kemudian menghitung jarak Euclidean antara data tersebut dengan seluruh data pada dataset pelatihan. Selanjutnya, KNN akan memilih sejumlah tetangga terdekat sebanyak K, sesuai nilai parameter yang ditentukan. Algoritma ini akan menentukan kelas mayoritas dari tetangga terdekat tersebut sebagai hasil prediksi. Adapun parameter yang digunakan adalah default yaitu:
+- n_neighbors=5 -> Bertujuan untuk memilih 5 tetangga terdekat
+- weights='uniform' -> Bertujuan untuk menetapkan bobot semua tetangga adalah sama
+- algorithm='auto' -> Bertujuan untuk mMemilh algoritma pencarian tetangga secara otomatis
+- p=2 -> Bertujuan untuk memilih jarak yang digunakan yaitu jarak Euclidean
+- metric='minkowski' -> Bertujuan untuk memilih fungsi jarak Minkowski
+
+Kelebihan:
+- Proses pelatihan yang ringan, terlihat dari proses running time yang lebih cepat dibandingkan algoritma lainnya
+- Bekerja baik pada dataset yang berukuran kecil hingga sedang
+
+Kekurangan:
+- Sensitif terhadap skala data (biasanya membutuhkan standardisasi/normalisasi data terlebih dahulu untuk mengatasi hal ini)
+- Sensitif terhadap outlier sehingga jika dataset mengandung outlier maka hasil prediksi berpotensi menjadi bias
+
+### Random Forest
+
+```ruby
+rf = RandomForestClassifier().fit(X_train, y_train)
+```
+Sesuai namanya, Random Forest adalah algoritma ML yang terdiri dari banyak pohon keputusan. Algoritma ini merupakan pengembangan atau tingkat lanjut dari algoritma Decision Tree. Cara kerjanya dimulai dengan membuat sejumlah pohon keputusan. Setiap pohon dilatih secara independen dan menghasilkan prediksi masing-masing. Random Forest kemudian menggabungkan hasil dari semua pohon, dimana kelas yang paling banyak dipilih oleh pohon-pohon tersebut menjadi prediksi akhir. Adapun parameter dari snippet code di atas adalah default dengan rincian sebagai berikut:
+- n_estimators=100 -> Berarti jumlah pohon yang dibuat ada 100
+- max_depth=None -> Berarti kedalaman pohon tidak dibatasi
+- min_samples_split=2 -> Berarti jumlah minimum sampel adalah 2
+- min_samples_leaf=1 -> Berarti jumlah minimum sampel pada setiap daun adalah 1
+- max_features='sqrt' -> Berarti jumlah fitur maksimal adalah akar kudarat dari jumlah fitur
+- bootstrap=True -> Berarti pohon dibuat dari sampel acak yang berasal dari data pelatihan
+- random_state=None -> Berarti sampel data dipilih secara acak
+- n_jobs=None -> Berarti model hanya memakai satu CPU untuk proses pelatihan
+
+Kelebihan:
+- Akurasi pada model ini biasanya lebih baik
+- Karena data dan fitur dipilih secara acak, maka model lebih baik dalam mengatasi overfitting
+
+Kekurangan:
+- Lebih lambat dan membutuhkan memori yang lebih besar, terlihat dari running time yang lebih lama
+- Kurang ideal untuk penggunaan real-time
+
+### Boosting Algorithm
+
+```ruby
+boosting = AdaBoostClassifier().fit(X_train, y_train)
+```
+Algoritma ini menggunakan teknik boosting yang bekerja dengan membangun model dari data latih. Kemudian ia membuat model kedua yang bertugas memperbaiki kesalahan dari model pertama. Model ditambahkan sampai data latih terprediksi dengan baik atau telah mencapai jumlah maksimum model untuk ditambahkan. Caranya adalah dengan menggabungkan beberapa model sederhana dan dianggap lemah (weak learners) sehingga membentuk suatu model yang kuat (strong ensemble learner). Adapun parameter yang digunakan adalah default yaitu:
+- n_estimators=50 -> Weak learners yang dibangun sejumlah 50
+- learning_rate=1 -> Bobot yang diterapkan pada masing-masing proses iterasi boosting
+- base_estimator=DecisionTreeClassifier(max_depth=1) ->	Algoritma dasar yang digunakan berupa Decision Tree
+- random_state=None: Digunakan untuk mengontrol random number generator yang digunakan
+
+Kelebihan:
+- Akurasi yang lebih tinggi karena belajar dari kesalahan sebelumnya
+- Sering mengungguli model yang lebih sederhana seperti logistic regression dan random forest
+
+Kekurangan:
+- Performa yang cenderung menurun jika menggunakan base learner yang terlalu kompleks
+
+Dari ketiga algoritma di atas, model **Algorithm Boosting** dapat dikatakan sebagai solusi terbaik untuk proyek ini. Sebabnya, dataset cenderung berukuran terlalu besar untuk model KNN. Di sisi lain, model Algorithm Boosting lebih cepat dibandingkan RF saat menjalani proses running (Boosting 13 detik vs RF 25 detik) sehingga lebih mendukung dalam penggunaan real-time.
 
 ## Evaluation
-Pada bagian ini anda perlu menyebutkan metrik evaluasi yang digunakan. Lalu anda perlu menjelaskan hasil proyek berdasarkan metrik evaluasi yang digunakan.
 
-Sebagai contoh, Anda memiih kasus klasifikasi dan menggunakan metrik **akurasi, precision, recall, dan F1 score**. Jelaskan mengenai beberapa hal berikut:
-- Penjelasan mengenai metrik yang digunakan
-- Menjelaskan hasil proyek berdasarkan metrik evaluasi
+Proyek ini menggunakan penyelesaian klasifikasi sehingga metrik evaluasi yang tepat untuk proyek ini yaitu accuracy, F1-score, precision dan recall. Adapun penjelasan lebih lanjut untuk masing-masing metrik yaitu:
+- Accuracy: Ukuran yang menyatakan berapa banyak prediksi yang benar dari seluruh data yang diuji. Metrik ini sering digunakan untuk menggambarkan tingkat keberhasilan keseluruhan model. Meski begitu, accuracy bisa memberikan gambaran yang salah jika data tidak seimbang sehingga diperlukan metrik lainnya.
+- F1-score: Rata-rata antara precision dan recall, memberikan gambaran yang lebih seimbang untuk menilai performa model terutama saat kelas tidak seimbang
+- Precision: Mengukur perbandingan prediksi positif yang benar-benar positif
+- Recall: Mengukur perbandingan data positif yang berhasil dideteksi oleh model
 
-Ingatlah, metrik evaluasi yang digunakan harus sesuai dengan konteks data, problem statement, dan solusi yang diinginkan.
+Berdasarkan pernyataan masalah, tujuan, dan solusi yang telah dibuat, metrik akurasi dan F1-score setiap model pada proyek ini telah memenuhi standar yaitu di atas 80%. Untuk model Algorithm Boosting, diperoleh nilai:
+- Accuracy 85.62%
+- F1-score 81.14%
+- Precision 77.31%
+- Recall 85.62%
 
-**Rubrik/Kriteria Tambahan (Opsional)**: 
-- Menjelaskan formula metrik dan bagaimana metrik tersebut bekerja.
+```ruby
+results = {
+    'Accuracy': accuracy_score(y_test, y_pred),
+    'Precision': precision_score(y_test, y_pred, average='weighted'),
+    'Recall': recall_score(y_test, y_pred, average='weighted'),
+    'F1-Score': f1_score(y_test, y_pred, average='weighted')
+```
+Penting untuk diperhatikan potongan kode di atas. Pada kode precision, recall, dan F1-score, parameter average yang digunakan yaitu 'weighted' bukan 'macro'. Hal ini dikarenakan dataset berupa cuaca di Bali dimana cuaca yang paling dominan adalah berawan sehingga ada peristiwa imbalance dataset. Namun karena proyek ini bertujuan untuk memprediksi cuaca secara umum dan bukan untuk memperhatikan kejadian langka (misal bencana alam atau deteksi penyakit) maka parameter yang digunakan akan average='weighted'.
+![download (2)](https://github.com/user-attachments/assets/f28a11ce-853e-45d4-8252-9b23e72ef476)
+
 
 **---Ini adalah bagian akhir laporan---**
-
-_Catatan:_
-- _Anda dapat menambahkan gambar, kode, atau tabel ke dalam laporan jika diperlukan. Temukan caranya pada contoh dokumen markdown di situs editor [Dillinger](https://dillinger.io/), [Github Guides: Mastering markdown](https://guides.github.com/features/mastering-markdown/), atau sumber lain di internet. Semangat!_
-- Jika terdapat penjelasan yang harus menyertakan code snippet, tuliskan dengan sewajarnya. Tidak perlu menuliskan keseluruhan kode project, cukup bagian yang ingin dijelaskan saja.
-
