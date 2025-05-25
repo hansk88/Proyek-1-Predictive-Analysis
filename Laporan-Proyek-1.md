@@ -1,4 +1,4 @@
-![download (2)](https://github.com/user-attachments/assets/fb28cabf-76cb-4d35-b224-ffa898805fa5)# Laporan Proyek Machine Learning - Hans Kristiandi
+# Laporan Proyek Machine Learning - Hans Kristiandi
 
 ## Domain Proyek
 
