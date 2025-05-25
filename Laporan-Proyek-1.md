@@ -97,16 +97,57 @@ Seperti yang telah dijelaskan, variabel/fitur akhir yang dipilih telah melalui b
 
 Selain berbagai tahapan EDA di atas, juga dilakukan berbagai visualisasi data untuk mempermudah pemahaman terhadap data yang dimiliki seperti membuat boxplot dan matriks korelasi.
 ![download (1)](https://github.com/user-attachments/assets/4d8dd1ba-108c-439e-a841-ba7b3164d44f)
-Boxplot ini bertujuan untuk melihat outlier pada masing-masing variabel/fitur
+Boxplot di atas bertujuan untuk melihat outlier pada masing-masing variabel/fitur
 ![download](https://github.com/user-attachments/assets/ac016ad7-a8c3-409e-aeef-49c97a23d835)
-Matriks korelasi ini bertujuan untuk mempermudah pemahaman terhadap hubungan antar variabel dengan label (**weather_desciption**) yang dilengkapi dengan warna dimana merah gelap artinya hubungan korelasi antar variabel sangat kuat dan biru muda artinya hubungan korelasi antar variabel sangat lemah
+Matriks korelasi di atas bertujuan untuk mempermudah pemahaman terhadap hubungan antar variabel dengan label (**weather_desciption**) yang dilengkapi dengan warna dimana merah gelap artinya hubungan korelasi antar variabel sangat kuat dan biru muda artinya hubungan korelasi antar variabel sangat lemah.
 
 ## Data Preparation
-Pada bagian ini Anda menerapkan dan menyebutkan teknik data preparation yang dilakukan. Teknik yang digunakan pada notebook dan laporan harus berurutan.
 
-**Rubrik/Kriteria Tambahan (Opsional)**: 
-- Menjelaskan proses data preparation yang dilakukan
-- Menjelaskan alasan mengapa diperlukan tahapan data preparation tersebut.
+Sebelum data digunakan untuk melatih model, data-data tersebut dibersihkan terlebih dahulu dan melewati serangkaian tahapan seperti:
+
+```ruby
+dataset.drop(['dt', 'dt_iso', 'timezone', 'city_name', 'lat', 'lon', 'weather_id', 'weather_main', 'weather_icon'], inplace=True, axis=1)
+```
+Kolom seperti tanggal, waktu, lokasi, dsb tidak relevan dengan kolom target (label) sehingga dihapus.
+
+```ruby
+dataset.drop(['sea_level', 'grnd_level', 'rain_today', 'snow_1h', 'snow_3h', 'snow_6h', 'snow_12h', 'snow_24h', 'snow_today'], inplace=True, axis=1)
+dataset.drop(['rain_1h', 'rain_3h', 'rain_6h', 'rain_12h', 'rain_24h'], inplace=True, axis=1)
+```
+Entri dari kolom ini semuanya atau mayoritas berupa nilai null sehingga kolom tersebut juga akan dihapus.
+
+```ruby
+check_diff = ((dataset["temp"] != dataset["temp_min"]) & 
+              (dataset["temp"] != dataset["temp_max"])).sum()
+```
+Berdasarkan pengamatan awal, entri dari kolom **temp**, **temp_min**, dan **temp_max** terlihat sama semua. Oleh karena itu kode ini bertujuan untuk mengecek apakah ada entri dari ketiga kolom tersebut yang berbeda. Setelah diperiksa, ditemukan bahwa terdapat beberapa baris dimana entri ketiga kolom berbeda sehingga kolom **temp_min** dan **temp_max** tidak jadi dihapus.
+
+```ruby
+filter_outliers = ~((dataset[num_features] < (Q1 - 1.5 * IQR)) |
+                    (dataset[num_features] > (Q3 + 1.5 * IQR))).any(axis=1)
+```
+Berdasarkan pengamatan dari boxplot, ditemukan berbagai variabel/fitur yang mengadung outlier. Kode ini bertujuan untuk menghapus entri-entri yang nilainya berada di luar dari batasan yang telah ditentukan
+
+```ruby
+for column in categorical_columns:
+    le = LabelEncoder()
+    dataset[column] = le.fit_transform(dataset[column])
+    label_encoders[column] = le
+```
+Bertujuan untuk melakukan encoding kolom yang bertipe object (dalam hal ini yaitu kolom target (label) alias **weather_description**) sehingga untuk sementara waktu menjadi angka. Tujuannya adalah untuk melihat korelasi setiap variabel dengan label.
+
+```ruby
+for column, encoder in label_encoders.items():
+    dataset[column] = encoder.inverse_transform(dataset[column])
+```
+Karena nantinya akan dilakukan inferensi model, maka kolom target dikembalikan ke bentuk semula untuk memudahkan pengguna saat ingin menggunakan program
+
+```ruby
+X = dataset.drop(["weather_description"],axis =1)
+y = dataset["weather_description"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
+```
+Bertujuan untuk memisahkan kolom variabel dalam X dan kolom target dalam y. Selanjutnya data dipisah dengan komposisi 80% untuk latihan dan 20% untuk diuji. Data yang telah dipisah telah siap untuk dimasukkan ke pelatihan model.
 
 ## Modeling
 Tahapan ini membahas mengenai model machine learning yang digunakan untuk menyelesaikan permasalahan. Anda perlu menjelaskan tahapan dan parameter yang digunakan pada proses pemodelan.
