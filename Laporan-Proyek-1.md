@@ -32,7 +32,8 @@ Berdasarkan pernyataan masalah yang telah dibuat, tujuannya yaitu:
 
 Agar tujuan yang telah dibuat dapat tercapai, solusi dasar yang ditawarkan yaitu:
 - Melatih model menggunakan tiga algoritma, yaitu K Nearest Neighbour, Random Forest, dan Boosting Algorithm
-- Model yang telah dibuat wajib dievaluasi dan memiliki nilai akurasi dan F1 score minimal 80% supaya dapat menghasilkan data prediksi yang akurat
+- Memilih parameter default dari masing-masing algoritma dengan asumsi parameter-parameter tersebut telah diatur sedemikian rupa berdasarkan berbagai eksperimen oleh ahli
+- Model yang telah dibuat wajib dievaluasi dan memiliki nilai akurasi dan F1-score minimal 80% supaya dapat menghasilkan data prediksi yang akurat. Pemilihan kedua metrik tersebut dikarenakan akurasi paling mudah dipahami dan menunjukkan persentase prediksi yang benar, sementara F1-score menunjukkan keseimbangan antara precision dan recall. Melalui kedua metrik tersebut, kita dimungkinkan untuk mendapatkan gambaran evaluasi yang menyeluruh terhadap performa model yang telah dibuat
 
 ## Data Understanding
 Data yang digunakan pada proyek ini diunduh dari Kaggle, dengan alamat URL yaitu https://www.kaggle.com/datasets/cornflake15/denpasarbalihistoricalweatherdata. Dataset ini berisi tentang data historis cuaca di kota Denpasar, Bali dalam kurun waktu 20 tahun, sejak 1 Januari 1990 hingga 7 Januari 2020 dan dicatat dalam satuan jam. Pemilik dari dataset ini adalah Rudy Hendrawan dan penting untuk diketahui bahwa dataset tersebut dibeli dari Open Weather App sehingga sumber dataset tersebut adalah kredibel dan dapat dipertanggungjawabkan. Adapun dataset berupa file csv dan memiliki jumlah baris sebanyak 264924 yang terdiri atas 32 kolom, dengan rincian sebagai berikut:
@@ -40,8 +41,8 @@ Data yang digunakan pada proyek ini diunduh dari Kaggle, dengan alamat URL yaitu
 - dt_iso: Tanggal dan waktu
 - timezone: Perbedaan waktu dari UTC dalam satuan detik
 - city_name: Nama kota
-- lat: Garis lintang
-- lon: Garis kota
+- lat: Koordinat garis lintang
+- lon: Koordinat garis bujur
 - temp: Suhu (dalam satuan Celcius)
 - temp_min: Suhu minimum
 - temp_max: Suhu maksimum
@@ -71,7 +72,7 @@ Data yang digunakan pada proyek ini diunduh dari Kaggle, dengan alamat URL yaitu
 
 ### Variabel-variabel pada Dataset
 
-Meski dataset memiliki 32 kolom, namun saat dilakukan EDA didapati bahwa beberapa kolom tidak memiliki nilai sama sekali dan kolom lainnya tidak relevan dengan kolom target (label). Adapun variabel/fitur yang digunakan pada dataset yaitu:
+Meski dataset memiliki 32 kolom, namun saat dilakukan EDA didapati bahwa beberapa kolom memiliki entri yang mayoritas berupa nilai null (yaitu kolom **sea_level**, **grnd_level**, **rain_today**, **snow_1h**, **snow_3h**, **snow_6h**, **snow_12h**, **snow_24h**, **snow_today**, **rain_1h**, **rain_3h** **rain_6h** **rain_12h** **rain_24h**) dan kolom lainnya tidak relevan dengan kolom target (kolom yang entrinya tidak informatif dan berpotensi menambah noise/menyebabkan overfitting seperti kolom **dt**, **dt_iso**, **timezone**, **city_name**, **lat**, **lon**, **weather_id**, **weather_main**, **weather_icon**). Adapun variabel/fitur yang digunakan pada dataset yaitu:
 - temp
 - temp_min
 - temp_max
@@ -87,7 +88,7 @@ Alasan dari dipilihnya **weather_description** dibandingkan **weather_main** dik
 
 ### Tahapan untuk Memahami Data
 
-Seperti yang telah dijelaskan, variabel/fitur akhir yang dipilih telah melalui berbagai penghapusan kolom yang tidak relevan. Adapun tahapan-tahapan yang dilakukan yaitu:
+Seperti yang telah dijelaskan, variabel/fitur akhir yang dipilih telah melalui berbagai tahapan EDA. Adapun tahapan-tahapan yang dilakukan yaitu:
 - dataset.head() -> Bertujuan untuk menampilkan data yang telah dimuat. Dari tahapan ini, dapat dilihat berbagai entri dari semua kolom yang ada
 - dataset.info() -> Bertujuan untuk melihat tipe data (float, integer, string, object, datetime, dsb) pada setiap kolom dan berapa banyak baris data yang dimiliki
 - dataset.isna().sum() -> Bertujuan untuk melihat kolom mana yang memiliki nilai null dan berapa jumlah null yang dimilikinya
@@ -121,6 +122,11 @@ check_diff = ((dataset["temp"] != dataset["temp_min"]) &
               (dataset["temp"] != dataset["temp_max"])).sum()
 ```
 Berdasarkan pengamatan awal, entri dari kolom **temp**, **temp_min**, dan **temp_max** terlihat sama semua. Oleh karena itu kode ini bertujuan untuk mengecek apakah ada entri dari ketiga kolom tersebut yang berbeda. Setelah diperiksa, ditemukan bahwa terdapat beberapa baris dimana entri ketiga kolom berbeda sehingga kolom **temp_min** dan **temp_max** tidak jadi dihapus.
+
+```ruby
+dataset.drop_duplicates(inplace=True)
+```
+Karena adanya data duplikat pada saat EDA maka kode di atas ditulis untuk menghapus nilai duplikat pada dataset. Kode inplace=True berarti perubahan langsung diterapkan pada dataset.
 
 ```ruby
 filter_outliers = ~((dataset[num_features] < (Q1 - 1.5 * IQR)) |
@@ -223,12 +229,22 @@ Proyek ini menggunakan penyelesaian klasifikasi sehingga metrik evaluasi yang te
 - Precision: Mengukur perbandingan prediksi positif yang benar-benar positif
 - Recall: Mengukur perbandingan data positif yang berhasil dideteksi oleh model
 
+Metrik di atas didasarkan pada perhitungan matematis dengan formula untuk tiap-tiap metrik yaitu:
+- Accuracy = (TP + TN) / (TP + TN + FP + FN)
+- F1 Score = 2 × (Precision × Recall) / (Precision + Recall)
+- Precision= TP / (TP + FP)  
+- Recall = TP / (TP + FN)
+
+_dimana TP = True Positive (prediksi positif dan realitanya memang positif), FN = False Negative (prediksi negatif padahal realitanya positif), FP = False Positive (prediksi positif padahal realitanya negatif), TN = True Negative (prediksi negatif dan realitanya memang negatif)_
+
 Berdasarkan pernyataan masalah, tujuan, dan solusi yang telah dibuat, metrik akurasi dan F1-score setiap model pada proyek ini telah memenuhi standar yaitu di atas 80%. Untuk model Algorithm Boosting, diperoleh nilai:
 - Accuracy 85.62%
 - F1-score 81.14%
 - Precision 77.31%
 - Recall 85.62%
 
+
+### Tambahan
 ```ruby
 results = {
     'Accuracy': accuracy_score(y_test, y_pred),
@@ -239,5 +255,10 @@ results = {
 Penting untuk diperhatikan potongan kode di atas. Pada kode precision, recall, dan F1-score, parameter average yang digunakan yaitu 'weighted' bukan 'macro'. Hal ini dikarenakan dataset berupa cuaca di Bali dimana cuaca yang paling dominan adalah berawan sehingga ada peristiwa imbalance dataset. Namun karena proyek ini bertujuan untuk memprediksi cuaca secara umum dan bukan untuk memperhatikan kejadian langka (misal bencana alam atau deteksi penyakit) maka parameter yang digunakan akan average='weighted'.
 ![download (2)](https://github.com/user-attachments/assets/f28a11ce-853e-45d4-8252-9b23e72ef476)
 
+```ruby
+predicted_label = boosting.predict(input_data)[0]
+print("Predicted weather: ", predicted_label)
+```
+Sesuai dengan tujuan yang telah ditetapkan sebelumnya, untuk dapat membuat model sederhana yang dapat memprediksi keadaan cuaca, maka kode di atas ditulis dengan harapan untuk menggambarkan hasil akhir dari model yang telah dibuat.
 
 **---Ini adalah bagian akhir laporan---**
